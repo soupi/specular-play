@@ -53,6 +53,7 @@ counter = do
       val <- foldDyn ($) 0 $ foldlEvents (>>>)
           [ incrs'
           , decrs'
+          , const <$> omega.setterE
           ]
 
       -- Display that value
@@ -61,9 +62,10 @@ counter = do
       -- Display buttons which return click events
       incrE <- buttonOnClick (pure mempty) $ text "Increment"
       decrE <- buttonOnClick (pure mempty) $ text "Decrement"
+      setterE <- setter
 
       -- Return the click events, which will be fed back to this very function
-      pure {incrE, decrE}
+      pure {incrE, decrE, setterE}
 
   pure unit
 
@@ -73,4 +75,27 @@ compose2 f g x y = f (g x y)
 foldlEvents :: forall a. (a -> a -> a) -> Array (Event a) -> Event a
 foldlEvents f = foldl (mergeEvents pure pure (compose2 pure f)) never
 
+
+setter :: forall m. MonadWidget m => m (Event Int)
+setter = el "div" $ do
+  txtE <- fixFRP $ \omega -> do
+    attrs <- weaken <$> holdDyn mempty never
+    txt <- textInput
+      { initialValue: ""
+      , attributes: attrs
+      , setValue: "" <$ omega.setE
+      }
+    setE <- buttonOnClick (pure mempty) $ text "Set"
+    let filtered = filterMapEvent fromString $ tagDyn (textInputValue txt) setE
+
+    pure (Tuple {setE: filtered} $ tagDyn (textInputValue txt) setE)
+
+  isValid <- holdWeakDyn $ flip map txtE $
+      \str -> case fromString str of
+        Nothing -> "Not a number."
+        Just _ -> ""
+
+  elAttr "p" (singleton "style" "color: red") $ dynText isValid
+
+  pure $ filterMapEvent fromString txtE
 
