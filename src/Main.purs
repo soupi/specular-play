@@ -5,13 +5,17 @@ import Prelude
 import Control.Monad.Eff (Eff)
 import Control.Monad.IO.Effect (INFINITY)
 import Control.Monad.IOSync (runIOSync)
+import Data.Foldable (foldl)
+import Data.Int (fromString)
+import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
-import Specular.Dom.Builder.Class (dynText, el, text)
+import Data.StrMap (singleton)
+import Data.Tuple (Tuple(..))
+import Specular.Dom.Builder.Class (dynText, el, elAttr, text)
 import Specular.Dom.Widget (class MonadWidget, runMainWidgetInBody)
 import Specular.Dom.Widgets.Button (buttonOnClick)
-import Specular.FRP (fixFRP_, weaken)
-import Specular.FRP.Base (foldDyn)
-
+import Specular.Dom.Widgets.Input (textInput, textInputValue)
+import Specular.FRP (Event, filterMapEvent, fixFRP, fixFRP_, foldDyn, holdDyn, holdWeakDyn, mergeEvents, never, tagDyn, weaken)
 
 main :: Eff (infinity :: INFINITY) Unit
 main = runIOSync $ runMainWidgetInBody mainWidget
@@ -41,12 +45,16 @@ counter :: forall m. MonadWidget m => m Unit
 counter = do
   el "div" do
     fixFRP_ $ \omega -> do
-      -- Use the events of the buttons to create a dynamic value that counts the key presses
-      incrs <- foldDyn (+) 0 (1 <$ omega.incrE)
-      decrs <- foldDyn (+) 0 (1 <$ omega.decrE)
+      -- Use the events of the buttons to create a dynamic functions that counts the key presses
+      let incrs' = ((\x -> x + 1) <$ omega.incrE)
+      let decrs' = ((\x -> x - 1) <$ omega.decrE)
 
-      -- Substract the number of decrements from the number of increments
-      let val = (\x y -> x - y) <$> incrs <*> decrs
+      -- Compose all of the functions and then fold them
+      val <- foldDyn ($) 0 $ foldlEvents (>>>)
+          [ incrs'
+          , decrs'
+          ]
+
       -- Display that value
       el "p" $ dynText $ weaken $ map (("Count: " <> _) <<< show) val
 
@@ -58,3 +66,11 @@ counter = do
       pure {incrE, decrE}
 
   pure unit
+
+compose2 :: forall a b c. (b -> c) -> (a -> a -> b) -> a -> a -> c
+compose2 f g x y = f (g x y)
+
+foldlEvents :: forall a. (a -> a -> a) -> Array (Event a) -> Event a
+foldlEvents f = foldl (mergeEvents pure pure (compose2 pure f)) never
+
+
