@@ -14,8 +14,8 @@ import Data.Tuple (Tuple(..))
 import Specular.Dom.Builder.Class (dynText, el, elAttr, text)
 import Specular.Dom.Widget (class MonadWidget, runMainWidgetInBody)
 import Specular.Dom.Widgets.Button (buttonOnClick)
-import Specular.Dom.Widgets.Input (textInput, textInputValue)
-import Specular.FRP (Event, filterMapEvent, fixFRP, fixFRP_, foldDyn, holdDyn, holdWeakDyn, mergeEvents, never, tagDyn, weaken)
+import Specular.Dom.Widgets.Input (textInput, textInputValue, textInputValueEventOnEnter)
+import Specular.FRP (Event, filterMapEvent, fixFRP, fixFRP_, foldDyn, holdDyn, holdWeakDyn, leftmost, mergeEvents, never, tagDyn, weaken)
 
 main :: Eff (infinity :: INFINITY) Unit
 main = runIOSync $ runMainWidgetInBody mainWidget
@@ -32,6 +32,9 @@ mainWidget = counter
 -- ____________ _____________
 -- | Increment| | Decrement |
 -- ------------ -------------
+--  ____________________   _____
+-- | 123                | | Set |
+--  --------------------   -----
 --
 -- Important notes:
 -- 1) The value of the counter is dependant on the events of the two buttons
@@ -76,6 +79,18 @@ foldlEvents :: forall a. (a -> a -> a) -> Array (Event a) -> Event a
 foldlEvents f = foldl (mergeEvents pure pure (compose2 pure f)) never
 
 
+-- | A setter widget
+--
+-- It will look like this:
+--  ____________________   _____
+-- | 123                | | Set |
+--  --------------------   -----
+--
+-- It returns an event of valid integers the user inserted.
+-- Set is triggered when the user clicks the 'Set' button or presses enter
+--
+-- An error message is displayed and the text box is not cleared if the user enters invalid input
+--
 setter :: forall m. MonadWidget m => m (Event Int)
 setter = el "div" $ do
   txtE <- fixFRP $ \omega -> do
@@ -85,7 +100,9 @@ setter = el "div" $ do
       , attributes: attrs
       , setValue: "" <$ omega.setE
       }
-    setE <- buttonOnClick (pure mempty) $ text "Set"
+    setKeyE <- buttonOnClick (pure mempty) $ text "Set"
+    setEnterE <- textInputValueEventOnEnter txt
+    let setE = leftmost [setKeyE, unit <$ setEnterE]
     let filtered = filterMapEvent fromString $ tagDyn (textInputValue txt) setE
 
     pure (Tuple {setE: filtered} $ tagDyn (textInputValue txt) setE)

@@ -19670,6 +19670,19 @@ var Specular_FRP_Fix = require("../Specular.FRP.Fix");
 var Specular_FRP_WeakDynamic = require("../Specular.FRP.WeakDynamic");
 var Type_Equality = require("../Type.Equality");
 var Type_Row = require("../Type.Row");
+
+// | A setter widget
+//
+// It will look like this:
+//  ____________________   _____
+// | 123                | | Set |
+//  --------------------   -----
+//
+// It returns an event of valid integers the user inserted.
+// Set is triggered when the user clicks the 'Set' button or presses enter
+//
+// An error message is displayed and the text box is not cleared if the user enters invalid input
+//
 var setter = function (dictMonadWidget) {
     return Specular_Dom_Builder_Class.el(dictMonadWidget.MonadDomBuilder0())("div")(Control_Bind.bind(((dictMonadWidget.MonadIOSync4()).Monad0()).Bind1())(Specular_FRP_Fix.fixFRP(Specular_FRP_Fix.fixFRPRecord(Specular_FRP_Fix.fixFRPRecordCons(new Data_Symbol.IsSymbol(function () {
         return "setE";
@@ -19681,10 +19694,13 @@ var setter = function (dictMonadWidget) {
                 setValue: Data_Functor.voidRight(Specular_FRP_Base.functorEvent)("")(omega.setE)
             }))(function (v1) {
                 return Control_Bind.bind(((dictMonadWidget.MonadIOSync4()).Monad0()).Bind1())(Specular_Dom_Widgets_Button.buttonOnClick(dictMonadWidget)(Control_Applicative.pure(Specular_FRP_WeakDynamic.applicativeWeakDynamic)(Data_Monoid.mempty(Data_StrMap.monoidStrMap(Data_Semigroup.semigroupString))))(Specular_Dom_Builder_Class.text(dictMonadWidget.MonadDomBuilder0())("Set")))(function (v2) {
-                    var filtered = Specular_FRP_Base.filterMapEvent(Data_Int.fromString)(Specular_FRP_Base.tagDyn(Specular_Dom_Widgets_Input.textInputValue(v1))(v2));
-                    return Control_Applicative.pure(((dictMonadWidget.MonadIOSync4()).Monad0()).Applicative0())(Data_Tuple.Tuple.create({
-                        setE: filtered
-                    })(Specular_FRP_Base.tagDyn(Specular_Dom_Widgets_Input.textInputValue(v1))(v2)));
+                    return Control_Bind.bind(((dictMonadWidget.MonadIOSync4()).Monad0()).Bind1())(Specular_Dom_Widgets_Input.textInputValueEventOnEnter(Specular_FRP_Base.monadFRP(dictMonadWidget.MonadHold3())(dictMonadWidget.MonadHost1())(dictMonadWidget.MonadIOSync4()))(v1))(function (v3) {
+                        var setE = Specular_FRP_Base.leftmost([ v2, Data_Functor.voidRight(Specular_FRP_Base.functorEvent)(Data_Unit.unit)(v3) ]);
+                        var filtered = Specular_FRP_Base.filterMapEvent(Data_Int.fromString)(Specular_FRP_Base.tagDyn(Specular_Dom_Widgets_Input.textInputValue(v1))(setE));
+                        return Control_Applicative.pure(((dictMonadWidget.MonadIOSync4()).Monad0()).Applicative0())(Data_Tuple.Tuple.create({
+                            setE: filtered
+                        })(Specular_FRP_Base.tagDyn(Specular_Dom_Widgets_Input.textInputValue(v1))(setE)));
+                    });
                 });
             });
         });
@@ -19697,7 +19713,7 @@ var setter = function (dictMonadWidget) {
             if (v1 instanceof Data_Maybe.Just) {
                 return "";
             };
-            throw new Error("Failed pattern match at Main line 94, column 15 - line 98, column 3: " + [ v1.constructor.name ]);
+            throw new Error("Failed pattern match at Main line 111, column 15 - line 115, column 3: " + [ v1.constructor.name ]);
         })))(function (v1) {
             return Control_Bind.discard(Control_Bind.discardUnit)(((dictMonadWidget.MonadIOSync4()).Monad0()).Bind1())(Specular_Dom_Builder_Class.elAttr(dictMonadWidget.MonadDomBuilder0())("p")(Data_StrMap.singleton("style")("color: red"))(Specular_Dom_Builder_Class.dynText(dictMonadWidget.MonadDomBuilder0())(v1)))(function () {
                 return Control_Applicative.pure(((dictMonadWidget.MonadIOSync4()).Monad0()).Applicative0())(Specular_FRP_Base.filterMapEvent(Data_Int.fromString)(v));
@@ -19726,6 +19742,9 @@ var foldlEvents = function (f) {
 // ____________ _____________
 // | Increment| | Decrement |
 // ------------ -------------
+//  ____________________   _____
+// | 123                | | Set |
+//  --------------------   -----
 //
 // Important notes:
 // 1) The value of the counter is dependant on the events of the two buttons
@@ -19750,10 +19769,10 @@ var counter = function (dictMonadWidget) {
             return x - 1 | 0;
         })(omega.decrE);
         return Control_Bind.bind(((dictMonadWidget.MonadIOSync4()).Monad0()).Bind1())(Specular_FRP_Base.foldDyn(dictMonadWidget.MonadHold3())(Data_Function.apply)(0)(foldlEvents(Control_Semigroupoid.composeFlipped(Control_Semigroupoid.semigroupoidFn))([ incrs$prime, decrs$prime, Data_Functor.map(Specular_FRP_Base.functorEvent)(Data_Function["const"])(omega.setterE) ])))(function (v) {
-            return Control_Bind.discard(Control_Bind.discardUnit)(((dictMonadWidget.MonadIOSync4()).Monad0()).Bind1())(Specular_Dom_Builder_Class.el(dictMonadWidget.MonadDomBuilder0())("p")(Specular_Dom_Builder_Class.dynText(dictMonadWidget.MonadDomBuilder0())(Specular_FRP_WeakDynamic.weaken(Data_Functor.map(Specular_FRP_Base.functorDynamic)(function ($25) {
+            return Control_Bind.discard(Control_Bind.discardUnit)(((dictMonadWidget.MonadIOSync4()).Monad0()).Bind1())(Specular_Dom_Builder_Class.el(dictMonadWidget.MonadDomBuilder0())("p")(Specular_Dom_Builder_Class.dynText(dictMonadWidget.MonadDomBuilder0())(Specular_FRP_WeakDynamic.weaken(Data_Functor.map(Specular_FRP_Base.functorDynamic)(function ($27) {
                 return (function (v1) {
                     return "Count: " + v1;
-                })(Data_Show.show(Data_Show.showInt)($25));
+                })(Data_Show.show(Data_Show.showInt)($27));
             })(v)))))(function () {
                 return Control_Bind.bind(((dictMonadWidget.MonadIOSync4()).Monad0()).Bind1())(Specular_Dom_Widgets_Button.buttonOnClick(dictMonadWidget)(Control_Applicative.pure(Specular_FRP_WeakDynamic.applicativeWeakDynamic)(Data_Monoid.mempty(Data_StrMap.monoidStrMap(Data_Semigroup.semigroupString))))(Specular_Dom_Builder_Class.text(dictMonadWidget.MonadDomBuilder0())("Increment")))(function (v1) {
                     return Control_Bind.bind(((dictMonadWidget.MonadIOSync4()).Monad0()).Bind1())(Specular_Dom_Widgets_Button.buttonOnClick(dictMonadWidget)(Control_Applicative.pure(Specular_FRP_WeakDynamic.applicativeWeakDynamic)(Data_Monoid.mempty(Data_StrMap.monoidStrMap(Data_Semigroup.semigroupString))))(Specular_Dom_Builder_Class.text(dictMonadWidget.MonadDomBuilder0())("Decrement")))(function (v2) {
